@@ -126,8 +126,18 @@ namespace TownTrainer
             }
             catch { }
 
-            if (_toggle != null) _toggle.visible = singlePlayer;
-            if (_root != null) _root.visible = singlePlayer && _visible;
+            if (_toggle != null)
+            {
+                _toggle.visible = singlePlayer;
+                _toggle.SetPosition(GRoot.inst.width - 124f, 18f, 0f);
+                GRoot.inst.SetChildIndex(_toggle, GRoot.inst.numChildren - 1);
+            }
+            if (_root != null)
+            {
+                _root.visible = singlePlayer && _visible;
+                _root.SetPosition(GRoot.inst.width - 380f, 62f, 0f);
+                GRoot.inst.SetChildIndex(_root, GRoot.inst.numChildren - 1);
+            }
 
             if (singlePlayer && Input.GetKeyDown(KeyCode.F8))
             {
@@ -144,7 +154,7 @@ namespace TownTrainer
         private void BuildToggle()
         {
             _toggle = Button("修改器", 0f, 0f, 96f, 34f, new Color(0.92f, 0.23f, 0.45f, 1f), () => _visible = !_visible);
-            _toggle.SetPosition(20f, 80f, 0f);
+            _toggle.SetPosition(GRoot.inst.width - 124f, 18f, 0f);
             
             GRoot.inst.AddChild(_toggle);
         }
@@ -155,7 +165,7 @@ namespace TownTrainer
             const float h = 500f;
             _root = new GComponent();
             _root.SetSize(w, h);
-            _root.SetPosition(20f, 124f, 0f);
+            _root.SetPosition(GRoot.inst.width - 380f, 62f, 0f);
 
             GGraph bg = new GGraph();
             bg.DrawRoundRect(w, h, new Color(0.06f, 0.07f, 0.10f, 0.94f), new float[] { 12, 12, 12, 12 });
