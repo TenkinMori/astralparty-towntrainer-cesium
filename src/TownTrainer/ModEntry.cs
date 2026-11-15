@@ -137,6 +137,7 @@ namespace TownTrainer
                 _root.visible = singlePlayer && _visible;
                 _root.SetPosition(GRoot.inst.width - 380f, 62f, 0f);
             _root.opaque = true;
+            _root.draggable = true;
                 GRoot.inst.SetChildIndex(_root, GRoot.inst.numChildren - 1);
             }
 
@@ -304,8 +305,9 @@ namespace TownTrainer
             label.textFormat.size = 16;
             label.color = Color.white;
             label.SetSize(w, h);
-            label.SetPosition(0f, (h - 20f) / 2f, 0f);
+            label.SetPosition(0f, 0f, 0f);
             label.align = AlignType.Center;
+            label.verticalAlign = VertAlignType.Middle;
             label.touchable = false;
             button.AddChild(label);
 
