@@ -254,13 +254,20 @@ namespace TownTrainer
             }));
 
             y += 44f;
-            _root.AddChild(Label("卡牌 ID 预览", 18, y, 14, new Color(0.65f, 0.85f, 1f, 1f)));
-            y += 20f;
-            _root.AddChild(Preview(CardText(), 18, y, 322, 92));
-            y += 102f;
-            _root.AddChild(Label("遗物 ID 预览", 18, y, 14, new Color(0.85f, 0.75f, 1f, 1f)));
-            y += 20f;
-            _root.AddChild(Preview(RelicText(), 18, y, 322, 92));
+            GComponent previewBox = new GComponent();
+            previewBox.SetSize(322f, 190f);
+            previewBox.SetPosition(18f, y + 40f, 0f);
+            previewBox.opaque = true;
+            previewBox.visible = false;
+            previewBox.AddChild(Label("卡牌 ID / 名字", 0f, 0f, 13, new Color(0.65f, 0.85f, 1f, 1f)));
+            previewBox.AddChild(Preview(CardText(), 0f, 20f, 322f, 78f));
+            previewBox.AddChild(Label("遗物 ID / 名字", 0f, 100f, 13, new Color(0.85f, 0.75f, 1f, 1f)));
+            previewBox.AddChild(Preview(RelicText(), 0f, 120f, 322f, 70f));
+            _root.AddChild(previewBox);
+            _root.AddChild(Button("显示 ID 预览", 18, y, 322, 32, new Color(0.32f, 0.42f, 0.68f, 1f), () =>
+            {
+                previewBox.visible = !previewBox.visible;
+            }));
 
             _root.visible = false;
             GRoot.inst.AddChild(_root);
@@ -351,11 +358,11 @@ namespace TownTrainer
         {
             StringBuilder sb = new StringBuilder();
             int count = 0;
-            foreach (var card in StaticConfigure.SinglePlayer.CardDict.Values)
+            foreach (var card in StaticConfigure.SinglePlayer.Cards)
             {
                 if (count >= 24) { sb.Append("..."); break; }
                 if (count > 0) sb.Append((count % 2 == 0) ? "\n" : "    ");
-                sb.Append(card.Id).Append(" ").Append(card.NameID.GetLocal(UIStringType.Card));
+                sb.Append(card.Id).Append(" ").Append(card.NameID.GetLocal(UIStringType.SinglePlayer));
                 count++;
             }
             return sb.ToString();
@@ -365,11 +372,11 @@ namespace TownTrainer
         {
             StringBuilder sb = new StringBuilder();
             int count = 0;
-            foreach (var relic in StaticConfigure.SinglePlayer.RelicDict.Values)
+            foreach (var relic in StaticConfigure.SinglePlayer.Relics)
             {
                 if (count >= 24) { sb.Append("..."); break; }
                 if (count > 0) sb.Append((count % 2 == 0) ? "\n" : "    ");
-                sb.Append(relic.Id).Append(" ").Append(relic.NameID.GetLocal(UIStringType.Relic));
+                sb.Append(relic.Id).Append(" ").Append(relic.NameID.GetLocal(UIStringType.SinglePlayer));
                 count++;
             }
             return sb.ToString();
