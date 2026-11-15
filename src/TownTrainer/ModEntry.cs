@@ -33,7 +33,7 @@ namespace TownTrainer
         public override string Author { get { return "TenkinMori"; } }
         public override string Description
         {
-            get { return "单人模式（吉星小镇）修改器：金币、卡牌、遗物、进度、骰子、结算。"; }
+            get { return "单人模式「吉星小镇」修改器：金币、卡牌、遗物、进度、骰子、锁定进度、直接结算，支持 ID 预览。"; }
         }
 
         public override void OnInitialize()
