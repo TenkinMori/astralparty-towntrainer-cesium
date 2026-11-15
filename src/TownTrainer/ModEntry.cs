@@ -1,7 +1,11 @@
 using System;
 using CesiumLoader.SDK.Mods;
+using Cysharp.Threading.Tasks;
+using System.Text;
+using UI;
 using Core.Scene;
 using FairyGUI;
+using GameLogic;
 using SinglePlayer;
 using SinglePlayer.GamePlay;
 using SinglePlayer.GamePlay.Relic;
@@ -88,9 +92,14 @@ namespace TownTrainer
             Game.GetModel<GMData>().SetLockGameProgress(value);
         }
 
-        internal void InstantVictory()
+        internal async void InstantVictory()
         {
             Game.GetModel<GameData>().UploadDataToServer(GameStatus.Victory);
+            SimpleSingletonProvider<GameLogicManager>.inst.friend.HandleSinglePlayerDataAfterBattle();
+            if (await SimpleSingletonProvider<UIManager>.inst.OpenPanel(UIPanelType.SinglePlayerSettlement) is SinglePlayerSettlementPanel panel)
+            {
+                panel.ShowResult(GameStatus.Victory);
+            }
         }
     }
 
@@ -105,6 +114,8 @@ namespace TownTrainer
         private GTextInput _progress;
         private GTextInput _dice;
         private GTextField _status;
+        private GTextField _lockLabel;
+        private bool _lock;
         private bool _visible;
 
         public TownTrainerPanel(TownTrainerController controller)
@@ -161,7 +172,7 @@ namespace TownTrainer
         private void BuildPanel()
         {
             const float w = 360f;
-            const float h = 500f;
+            const float h = 660f;
             _root = new GComponent();
             _root.SetSize(w, h);
             _root.SetPosition(GRoot.inst.width - 380f, 62f, 0f);
@@ -220,16 +231,13 @@ namespace TownTrainer
             });
 
             y += 56f;
-            _root.AddChild(Button("锁定进度 ON", 18, y, 150, 32, new Color(0.30f, 0.65f, 0.45f, 1f), () =>
+            _root.AddChild(Button("锁定进度: OFF", 18, y, 322, 32, new Color(0.30f, 0.65f, 0.45f, 1f), () =>
             {
-                _controller.SetLockProgress(true);
-                _status.text = "进度已锁定";
-            }));
-            _root.AddChild(Button("锁定进度 OFF", 180, y, 160, 32, new Color(0.30f, 0.40f, 0.55f, 1f), () =>
-            {
-                _controller.SetLockProgress(false);
-                _status.text = "进度已解锁";
-            }));
+                _lock = !_lock;
+                _controller.SetLockProgress(_lock);
+                if (_lockLabel != null) _lockLabel.text = "锁定进度: " + (_lock ? "ON" : "OFF");
+                _status.text = _lock ? "进度已锁定" : "进度已解锁";
+            }, l => _lockLabel = l));
 
             y += 42f;
             _root.AddChild(Button("直接结算胜利", 18, y, 322, 38, new Color(0.88f, 0.22f, 0.42f, 1f), () =>
@@ -243,6 +251,15 @@ namespace TownTrainer
             {
                 _visible = false;
             }));
+
+            y += 44f;
+            _root.AddChild(Label("卡牌 ID 预览", 18, y, 14, new Color(0.65f, 0.85f, 1f, 1f)));
+            y += 20f;
+            _root.AddChild(Preview(IdsText(StaticConfigure.SinglePlayer.CardDict.Keys), 18, y, 322, 72));
+            y += 82f;
+            _root.AddChild(Label("遗物 ID 预览", 18, y, 14, new Color(0.85f, 0.75f, 1f, 1f)));
+            y += 20f;
+            _root.AddChild(Preview(IdsText(StaticConfigure.SinglePlayer.RelicDict.Keys), 18, y, 322, 72));
 
             _root.visible = false;
             GRoot.inst.AddChild(_root);
@@ -266,12 +283,12 @@ namespace TownTrainer
             _root.AddChild(inputBg);
             _root.SetChildIndex(inputBg, _root.GetChildIndex(input));
 
-            GComponent primaryBtn = Button(primary, 258f, y, secondary != null ? 62f : 84f, 30f, color, primaryAction);
+            GComponent primaryBtn = Button(primary, secondary != null ? 236f : 258f, y, secondary != null ? 56f : 84f, 30f, color, primaryAction);
             _root.AddChild(primaryBtn);
 
             if (secondary != null)
             {
-                _root.AddChild(Button(secondary, 326f, y, 50f, 30f, new Color(0.26f, 0.28f, 0.34f, 1f), secondaryAction));
+                _root.AddChild(Button(secondary, 298f, y, 44f, 30f, new Color(0.26f, 0.28f, 0.34f, 1f), secondaryAction));
             }
             return input;
         }
@@ -286,7 +303,7 @@ namespace TownTrainer
             return label;
         }
 
-        private GComponent Button(string text, float x, float y, float w, float h, Color color, Action onClick)
+        private GComponent Button(string text, float x, float y, float w, float h, Color color, Action onClick, Action<GTextField> labelReady = null)
         {
             GComponent button = new GComponent();
             button.SetSize(w, h);
@@ -310,10 +327,37 @@ namespace TownTrainer
             label.verticalAlign = VertAlignType.Middle;
             label.touchable = false;
             button.AddChild(label);
+            labelReady?.Invoke(label);
 
             button.touchable = true;
             button.onClick.Add((EventContext context) => onClick());
             return button;
+        }
+
+        private static GTextField Preview(string text, float x, float y, float w, float h)
+        {
+            GTextField label = new GTextField();
+            label.text = text;
+            label.textFormat.size = 12;
+            label.color = new Color(0.72f, 0.75f, 0.82f, 1f);
+            label.autoSize = AutoSizeType.None;
+            label.SetSize(w, h);
+            label.SetPosition(x, y, 0f);
+            return label;
+        }
+
+        private static string IdsText(System.Collections.Generic.IEnumerable<int> ids)
+        {
+            StringBuilder sb = new StringBuilder();
+            int count = 0;
+            foreach (int id in ids)
+            {
+                if (count >= 48) { sb.Append("..."); break; }
+                if (count > 0) sb.Append((count % 6 == 0) ? "\n" : "  ");
+                sb.Append(id);
+                count++;
+            }
+            return sb.ToString();
         }
 
         private static int Parse(GTextInput input, int fallback)
