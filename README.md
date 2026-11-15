@@ -1,13 +1,13 @@
-# 吉星小镇修改器（CesiumLoader 版）
+﻿# 吉星小镇修改器（CesiumLoader 版）
 
 <p align="left">
   <img src="icon.png" width="96" alt="icon">
 </p>
 
 > 《吉星派对》（Steam：AstralParty）单人模式「吉星小镇」的 CesiumLoader 修改器。
-> 按 **F8** 打开/关闭面板。
+> 按 **F8** 或左上角「修改器」按钮打开/关闭 FairyGUI 面板。
 
-## 功能
+## 功能\n\n- FairyGUI 面板，风格与游戏一致
 
 - 加/减金币
 - 按 ID 加卡
@@ -52,3 +52,4 @@ dist/TownTrainer/
 ## 许可
 
 MIT
+
