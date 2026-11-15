@@ -136,6 +136,7 @@ namespace TownTrainer
             {
                 _root.visible = singlePlayer && _visible;
                 _root.SetPosition(GRoot.inst.width - 380f, 62f, 0f);
+            _root.opaque = true;
                 GRoot.inst.SetChildIndex(_root, GRoot.inst.numChildren - 1);
             }
 
@@ -290,9 +291,12 @@ namespace TownTrainer
             GComponent button = new GComponent();
             button.SetSize(w, h);
             button.SetPosition(x, y, 0f);
+            button.opaque = true;
+            button.touchable = true;
 
             GGraph bg = new GGraph();
             bg.DrawRoundRect(w, h, color, new float[] { 8, 8, 8, 8 });
+            bg.touchable = false;
             button.AddChild(bg);
 
             GTextField label = new GTextField();
@@ -302,6 +306,7 @@ namespace TownTrainer
             label.SetSize(w, h);
             label.SetPosition(0f, (h - 20f) / 2f, 0f);
             label.align = AlignType.Center;
+            label.touchable = false;
             button.AddChild(label);
 
             button.touchable = true;
