@@ -2,6 +2,7 @@ using System;
 using CesiumLoader.SDK.Mods;
 using Cysharp.Threading.Tasks;
 using System.Text;
+using System.Collections.Generic;
 using UI;
 using Core.Scene;
 using FairyGUI;
@@ -116,6 +117,11 @@ namespace TownTrainer
         private GTextInput _dice;
         private GTextField _status;
         private GTextField _lockLabel;
+        private GComponent _idPanel;
+        private GTextField _idText;
+        private int _idMode;
+        private int _idPage;
+        private readonly List<IdEntry> _idEntries = new List<IdEntry>();
         private bool _lock;
         private bool _visible;
 
@@ -173,7 +179,7 @@ namespace TownTrainer
         private void BuildPanel()
         {
             const float w = 360f;
-            const float h = 700f;
+            const float h = 520f;
             _root = new GComponent();
             _root.SetSize(w, h);
             _root.SetPosition(GRoot.inst.width - 380f, 62f, 0f);
@@ -254,23 +260,93 @@ namespace TownTrainer
             }));
 
             y += 44f;
-            GComponent previewBox = new GComponent();
-            previewBox.SetSize(322f, 190f);
-            previewBox.SetPosition(18f, y + 40f, 0f);
-            previewBox.opaque = true;
-            previewBox.visible = false;
-            previewBox.AddChild(Label("卡牌 ID / 名字", 0f, 0f, 13, new Color(0.65f, 0.85f, 1f, 1f)));
-            previewBox.AddChild(Preview(CardText(), 0f, 20f, 322f, 78f));
-            previewBox.AddChild(Label("遗物 ID / 名字", 0f, 100f, 13, new Color(0.85f, 0.75f, 1f, 1f)));
-            previewBox.AddChild(Preview(RelicText(), 0f, 120f, 322f, 70f));
-            _root.AddChild(previewBox);
-            _root.AddChild(Button("显示 ID 预览", 18, y, 322, 32, new Color(0.32f, 0.42f, 0.68f, 1f), () =>
-            {
-                previewBox.visible = !previewBox.visible;
-            }));
+            _root.AddChild(Button("ID 预览", 18, y, 322, 32, new Color(0.32f, 0.42f, 0.68f, 1f), () => ShowIdPanel(0)));
 
             _root.visible = false;
             GRoot.inst.AddChild(_root);
+        }
+
+        private sealed class IdEntry
+        {
+            public int Id;
+            public string Name;
+        }
+
+        private void ShowIdPanel(int mode)
+        {
+            if (_idPanel == null) BuildIdPanel();
+            _idMode = mode;
+            _idPage = 0;
+            RefreshIdPanel();
+            _idPanel.visible = true;
+            GRoot.inst.SetChildIndex(_idPanel, GRoot.inst.numChildren - 1);
+        }
+
+        private void BuildIdPanel()
+        {
+            const float w = 440f;
+            const float h = 560f;
+            _idPanel = new GComponent();
+            _idPanel.SetSize(w, h);
+            _idPanel.SetPosition((GRoot.inst.width - w) / 2f, (GRoot.inst.height - h) / 2f, 0f);
+            _idPanel.opaque = true;
+            _idPanel.draggable = true;
+
+            GGraph bg = new GGraph();
+            bg.DrawRoundRect(w, h, new Color(0.06f, 0.07f, 0.10f, 0.96f), new float[] { 12, 12, 12, 12 });
+            _idPanel.AddChild(bg);
+            _idPanel.AddChild(Label("ID 预览", 20f, 14f, 20, Color.white));
+            _idPanel.AddChild(Button("卡牌", 20f, 54f, 90f, 30f, new Color(0.30f, 0.55f, 0.90f, 1f), () => ShowIdPanel(0)));
+            _idPanel.AddChild(Button("遗物", 120f, 54f, 90f, 30f, new Color(0.58f, 0.40f, 0.88f, 1f), () => ShowIdPanel(1)));
+
+            _idText = new GTextField();
+            _idText.textFormat.size = 13;
+            _idText.color = new Color(0.82f, 0.84f, 0.90f, 1f);
+            _idText.autoSize = AutoSizeType.None;
+            _idText.SetSize(400f, 390f);
+            _idText.SetPosition(20f, 98f, 0f);
+            _idPanel.AddChild(_idText);
+
+            _idPanel.AddChild(Button("上一页", 20f, 505f, 90f, 32f, new Color(0.25f, 0.30f, 0.42f, 1f), () =>
+            {
+                if (_idPage > 0) { _idPage--; RefreshIdPanel(); }
+            }));
+            _idPanel.AddChild(Button("下一页", 120f, 505f, 90f, 32f, new Color(0.25f, 0.30f, 0.42f, 1f), () =>
+            {
+                if ((_idPage + 1) * 20 < _idEntries.Count) { _idPage++; RefreshIdPanel(); }
+            }));
+            _idPanel.AddChild(Button("关闭", 330f, 505f, 90f, 32f, new Color(0.80f, 0.22f, 0.38f, 1f), () =>
+            {
+                _idPanel.visible = false;
+            }));
+
+            _idPanel.visible = false;
+            GRoot.inst.AddChild(_idPanel);
+        }
+
+        private void RefreshIdPanel()
+        {
+            _idEntries.Clear();
+            if (_idMode == 0)
+            {
+                foreach (var card in StaticConfigure.SinglePlayer.Cards)
+                    _idEntries.Add(new IdEntry { Id = card.Id, Name = card.NameID.GetLocal(UIStringType.SinglePlayer) });
+            }
+            else
+            {
+                foreach (var relic in StaticConfigure.SinglePlayer.Relics)
+                    _idEntries.Add(new IdEntry { Id = relic.Id, Name = relic.NameID.GetLocal(UIStringType.SinglePlayer) });
+            }
+
+            StringBuilder sb = new StringBuilder();
+            int start = _idPage * 20;
+            for (int i = start; i < _idEntries.Count && i < start + 20; i++)
+            {
+                sb.Append(_idEntries[i].Id).Append("  ").Append(_idEntries[i].Name).Append('\n');
+            }
+            int pages = Math.Max(1, (_idEntries.Count + 19) / 20);
+            sb.Append("\n").Append(_idPage + 1).Append(" / ").Append(pages);
+            _idText.text = sb.ToString();
         }
 
         private GTextInput AddRow(string label, float y, string value, string primary, Color color, Action primaryAction, string secondary, Action secondaryAction)
