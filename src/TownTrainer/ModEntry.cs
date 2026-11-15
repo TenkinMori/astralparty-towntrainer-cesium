@@ -10,6 +10,7 @@ using SinglePlayer;
 using SinglePlayer.GamePlay;
 using SinglePlayer.GamePlay.Relic;
 using Tools;
+using Tools;
 using UnityEngine;
 
 namespace TownTrainer
@@ -172,7 +173,7 @@ namespace TownTrainer
         private void BuildPanel()
         {
             const float w = 360f;
-            const float h = 660f;
+            const float h = 700f;
             _root = new GComponent();
             _root.SetSize(w, h);
             _root.SetPosition(GRoot.inst.width - 380f, 62f, 0f);
@@ -255,11 +256,11 @@ namespace TownTrainer
             y += 44f;
             _root.AddChild(Label("卡牌 ID 预览", 18, y, 14, new Color(0.65f, 0.85f, 1f, 1f)));
             y += 20f;
-            _root.AddChild(Preview(IdsText(StaticConfigure.SinglePlayer.CardDict.Keys), 18, y, 322, 72));
-            y += 82f;
+            _root.AddChild(Preview(CardText(), 18, y, 322, 92));
+            y += 102f;
             _root.AddChild(Label("遗物 ID 预览", 18, y, 14, new Color(0.85f, 0.75f, 1f, 1f)));
             y += 20f;
-            _root.AddChild(Preview(IdsText(StaticConfigure.SinglePlayer.RelicDict.Keys), 18, y, 322, 72));
+            _root.AddChild(Preview(RelicText(), 18, y, 322, 92));
 
             _root.visible = false;
             GRoot.inst.AddChild(_root);
@@ -346,15 +347,29 @@ namespace TownTrainer
             return label;
         }
 
-        private static string IdsText(System.Collections.Generic.IEnumerable<int> ids)
+        private static string CardText()
         {
             StringBuilder sb = new StringBuilder();
             int count = 0;
-            foreach (int id in ids)
+            foreach (var card in StaticConfigure.SinglePlayer.CardDict.Values)
             {
-                if (count >= 48) { sb.Append("..."); break; }
-                if (count > 0) sb.Append((count % 6 == 0) ? "\n" : "  ");
-                sb.Append(id);
+                if (count >= 24) { sb.Append("..."); break; }
+                if (count > 0) sb.Append((count % 2 == 0) ? "\n" : "    ");
+                sb.Append(card.Id).Append(" ").Append(card.NameID.GetLocal(UIStringType.Card));
+                count++;
+            }
+            return sb.ToString();
+        }
+
+        private static string RelicText()
+        {
+            StringBuilder sb = new StringBuilder();
+            int count = 0;
+            foreach (var relic in StaticConfigure.SinglePlayer.RelicDict.Values)
+            {
+                if (count >= 24) { sb.Append("..."); break; }
+                if (count > 0) sb.Append((count % 2 == 0) ? "\n" : "    ");
+                sb.Append(relic.Id).Append(" ").Append(relic.NameID.GetLocal(UIStringType.Relic));
                 count++;
             }
             return sb.ToString();
