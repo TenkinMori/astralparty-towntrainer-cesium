@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>TownTrainer</AssemblyName>
+    <RootNamespace>TownTrainer</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="CesiumLoader.SDK"><HintPath>..\..\lib\CesiumLoader.SDK.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="AstralParty.Runtime"><HintPath>..\..\refs\game\AstralParty.Runtime.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Google.Protobuf.Runtime"><HintPath>..\..\refs\game\Google.Protobuf.Runtime.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UniTask"><HintPath>..\..\refs\game\UniTask.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>..\..\refs\game\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.InputLegacyModule"><HintPath>..\..\refs\game\UnityEngine.InputLegacyModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.IMGUIModule"><HintPath>..\..\refs\game\UnityEngine.IMGUIModule.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>
+
+
