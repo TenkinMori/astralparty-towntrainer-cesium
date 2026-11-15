@@ -1,7 +1,7 @@
-# 吉星小镇修改器（CesiumLoader 版）
+﻿# 吉星小镇修改器（CesiumLoader 版）
 
 <p align="left">
-  <img src="icon.png" width="96" alt="icon">
+  <img src="icon-town.png" width="96" alt="icon">
 </p>
 
 > 《吉星派对》（Steam：AstralParty）单人模式「吉星小镇」的 CesiumLoader 修改器。
@@ -64,3 +64,4 @@ dist/TownTrainer/
 ## 许可
 
 MIT
+
