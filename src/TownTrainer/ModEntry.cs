@@ -129,15 +129,11 @@ namespace TownTrainer
             if (_toggle != null)
             {
                 _toggle.visible = singlePlayer;
-                _toggle.SetPosition(GRoot.inst.width - 124f, 18f, 0f);
                 GRoot.inst.SetChildIndex(_toggle, GRoot.inst.numChildren - 1);
             }
             if (_root != null)
             {
                 _root.visible = singlePlayer && _visible;
-                _root.SetPosition(GRoot.inst.width - 380f, 62f, 0f);
-            _root.opaque = true;
-            _root.draggable = true;
                 GRoot.inst.SetChildIndex(_root, GRoot.inst.numChildren - 1);
             }
 
@@ -157,7 +153,8 @@ namespace TownTrainer
         {
             _toggle = Button("修改器", 0f, 0f, 96f, 34f, new Color(0.92f, 0.23f, 0.45f, 1f), () => _visible = !_visible);
             _toggle.SetPosition(GRoot.inst.width - 124f, 18f, 0f);
-            
+            _toggle.draggable = true;
+
             GRoot.inst.AddChild(_toggle);
         }
 
@@ -168,6 +165,8 @@ namespace TownTrainer
             _root = new GComponent();
             _root.SetSize(w, h);
             _root.SetPosition(GRoot.inst.width - 380f, 62f, 0f);
+            _root.opaque = true;
+            _root.draggable = true;
 
             GGraph bg = new GGraph();
             bg.DrawRoundRect(w, h, new Color(0.06f, 0.07f, 0.10f, 0.94f), new float[] { 12, 12, 12, 12 });
@@ -304,6 +303,7 @@ namespace TownTrainer
             label.text = text;
             label.textFormat.size = 16;
             label.color = Color.white;
+            label.autoSize = AutoSizeType.None;
             label.SetSize(w, h);
             label.SetPosition(0f, 0f, 0f);
             label.align = AlignType.Center;
