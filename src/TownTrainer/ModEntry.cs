@@ -1,4 +1,6 @@
 using System;
+using CesiumLoader.SDK.Configuration;
+using CesiumLoader.SDK.Inputs;
 using CesiumLoader.SDK.Mods;
 using Cysharp.Threading.Tasks;
 using System.Text;
@@ -10,7 +12,6 @@ using GameLogic;
 using SinglePlayer;
 using SinglePlayer.GamePlay;
 using SinglePlayer.GamePlay.Relic;
-using Tools;
 using Tools;
 using UnityEngine;
 
@@ -28,17 +29,33 @@ namespace TownTrainer
     {
         private TownTrainerPanel _panel;
 
+        internal bool Enabled { get { return _enabled; } }
+        internal KeyCode ToggleKey { get { return _toggleKey; } }
+        internal bool ShowByDefault { get { return _showByDefault; } }
+
+        private bool _enabled = true;
+        private KeyCode _toggleKey = KeyCode.F8;
+        private bool _showByDefault;
+
         public override string Name { get { return "吉星小镇修改器"; } }
-        public override string Version { get { return "1.1.0"; } }
+        public override string Version { get { return "1.2.0"; } }
         public override string Author { get { return "TenkinMori"; } }
         public override string Description
         {
-            get { return "单人模式「吉星小镇」修改器：金币、卡牌、遗物、进度、骰子、锁定进度、直接结算，支持 ID 预览。"; }
+            get { return "单人模式「吉星小镇」修改器：金币、卡牌、遗物、进度、骰子、锁定进度、直接结算，支持 ID 预览；热键与默认显示可在配置里改。"; }
         }
 
         public override void OnInitialize()
         {
-            Log.Info("修改器已加载，F8 打开/关闭");
+            ReadConfig(true);
+            Log.Info("修改器已加载，" + _toggleKey + " 打开/关闭");
+        }
+
+        public override void OnConfigChanged()
+        {
+            ReadConfig(false);
+            _panel?.ApplyConfig();
+            Log.Info("配置已更新：enabled=" + _enabled + "，toggleKey=" + _toggleKey + "，showByDefault=" + _showByDefault);
         }
 
         public override void OnUpdate()
@@ -55,6 +72,45 @@ namespace TownTrainer
         {
             _panel?.Dispose();
             _panel = null;
+        }
+
+        private void ReadConfig(bool firstLoad)
+        {
+            ModConfig cfg = Config;
+            if (cfg == null) return;
+
+            // SetDefault 只补缺失的键，已有配置不会被覆盖；说明写进 _comments，供 Toys 配置界面显示。
+            bool changed = false;
+            changed |= cfg.SetDefault("enabled", true, ConfigDoc.Of(
+                "是否启用修改器。关闭后不显示按钮和面板。",
+                "是否啟用修改器。關閉後不顯示按鈕和面板。",
+                "Whether the trainer is enabled. Disabling hides the button and panel.",
+                "トレーナーを有効にするか。無効にするとボタンとパネルを表示しません。"));
+            changed |= cfg.SetDefault("toggleKey", "F8", ConfigDoc.Of(
+                "打开 / 关闭面板的按键，填 Unity KeyCode 名称：F8、F9、Insert、Home、BackQuote、KeyPad1 等。写 None 可停用热键。",
+                "開啟 / 關閉面板的按鍵，填 Unity KeyCode 名稱：F8、F9、Insert、Home、BackQuote、KeyPad1 等。寫 None 可停用熱鍵。",
+                "Key used to open / close the panel. Use a Unity KeyCode name: F8, F9, Insert, Home, BackQuote, KeyPad1. Set None to disable.",
+                "パネルを開閉するキー。Unity の KeyCode 名（F8、F9、Insert、Home、BackQuote、KeyPad1 など）。None で無効。"));
+            changed |= cfg.SetDefault("showByDefault", false, ConfigDoc.Of(
+                "进入单人模式时是否直接显示面板。false 时只显示右上角「修改器」按钮。",
+                "進入單人模式時是否直接顯示面板。false 時只顯示右上角「修改器」按鈕。",
+                "Whether to show the panel immediately on entering single-player mode. When false, only the corner button is shown.",
+                "ソロモードに入ったときパネルを最初から表示するか。false なら右上の「修改器」ボタンのみ表示。"));
+            if (changed || firstLoad) cfg.SaveIfDirty();
+
+            _enabled = cfg.GetBool("enabled", true);
+            _showByDefault = cfg.GetBool("showByDefault", false);
+            _toggleKey = ParseKey(cfg.GetString("toggleKey", "F8"), KeyCode.F8);
+        }
+
+        /// <summary>配置里的键名按 Unity KeyCode 解析，写错就退回默认键。</summary>
+        private static KeyCode ParseKey(string name, KeyCode fallback)
+        {
+            if (string.IsNullOrEmpty(name)) return fallback;
+
+            KeyCode key;
+            if (Enum.TryParse(name.Trim(), true, out key) && key != KeyCode.None) return key;
+            return fallback;
         }
 
         internal void ChangeGold(int amount)
@@ -116,6 +172,9 @@ namespace TownTrainer
         private GTextInput _progress;
         private GTextInput _dice;
         private GTextField _status;
+        private GTextField _title;
+        private GTextField _hint;
+        private GTextField _closeLabel;
         private GTextField _lockLabel;
         private GComponent _idPanel;
         private GTextField _idText;
@@ -124,15 +183,25 @@ namespace TownTrainer
         private readonly List<IdEntry> _idEntries = new List<IdEntry>();
         private bool _lock;
         private bool _visible;
+        private bool _keyHeld;
 
         public TownTrainerPanel(TownTrainerController controller)
         {
             _controller = controller;
+            _visible = controller.ShowByDefault;
         }
 
         public void Tick()
         {
             if (GRoot.inst == null) return;
+
+            if (!_controller.Enabled)
+            {
+                if (_toggle != null) _toggle.visible = false;
+                if (_root != null) _root.visible = false;
+                if (_idPanel != null) _idPanel.visible = false;
+                return;
+            }
 
             if (_toggle == null) BuildToggle();
             if (_root == null) BuildPanel();
@@ -155,10 +224,45 @@ namespace TownTrainer
                 GRoot.inst.SetChildIndex(_root, GRoot.inst.numChildren - 1);
             }
 
-            if (singlePlayer && Input.GetKeyDown(KeyCode.F8))
+            TickHotkey(singlePlayer);
+        }
+
+        /// <summary>
+        /// SDK 的 InputService 比 UnityEngine.Input 更可靠（反射 + Win32 兜底，IL2CPP 裁剪下也能用）。
+        /// IsKeyPressed 只在「本帧」为真，掉帧就丢，所以这里用 IsKeyHeld 自己算下降沿；
+        /// 输入框正在接收文字时不算，避免在配置里打字触发开关。
+        /// </summary>
+        private void TickHotkey(bool singlePlayer)
+        {
+            KeyCode key = _controller.ToggleKey;
+            bool held = false;
+            if (key != KeyCode.None && singlePlayer && InputService.IsAvailable && !InputService.IsKeyboardCaptured)
+            {
+                held = InputService.IsKeyHeld(key);
+            }
+
+            bool edge = held && !_keyHeld;
+            _keyHeld = held;
+
+            if (edge)
             {
                 _visible = !_visible;
+                if (_status != null) _status.text = _visible ? "面板已打开" : "面板已关闭";
             }
+        }
+
+        /// <summary>配置热重载后调用：按键名、默认显示等改动立刻反映到已建好的界面上。</summary>
+        public void ApplyConfig()
+        {
+            if (_title != null) _title.text = "吉星小镇修改器  v" + _controller.Version;
+            if (_hint != null) _hint.text = HintText();
+            if (_closeLabel != null) _closeLabel.text = "关闭 (" + _controller.ToggleKey + ")";
+        }
+
+        private string HintText()
+        {
+            KeyCode key = _controller.ToggleKey;
+            return key == KeyCode.None ? "热键已停用" : key + " 打开/关闭";
         }
 
         public void Dispose()
@@ -190,8 +294,10 @@ namespace TownTrainer
             bg.DrawRoundRect(w, h, new Color(0.06f, 0.07f, 0.10f, 0.94f), new float[] { 12, 12, 12, 12 });
             _root.AddChild(bg);
 
-            _root.AddChild(Label("吉星小镇修改器  v1.1.0", 18, 16, 24, Color.white));
-            _status = Label("F8 打开/关闭", 18, 48, 16, new Color(0.75f, 0.78f, 0.85f, 1f));
+            _title = Label("吉星小镇修改器  v" + _controller.Version, 18, 16, 24, Color.white);
+            _root.AddChild(_title);
+            _status = Label(HintText(), 18, 48, 16, new Color(0.75f, 0.78f, 0.85f, 1f));
+            _hint = _status;
             _root.AddChild(_status);
 
             float y = 84f;
@@ -254,15 +360,16 @@ namespace TownTrainer
             }));
 
             y += 50f;
-            _root.AddChild(Button("关闭 (F8)", 18, y, 322, 32, new Color(0.22f, 0.24f, 0.30f, 1f), () =>
+            string closeText = _controller.ToggleKey == KeyCode.None ? "关闭" : "关闭 (" + _controller.ToggleKey + ")";
+            _root.AddChild(Button(closeText, 18, y, 322, 32, new Color(0.22f, 0.24f, 0.30f, 1f), () =>
             {
                 _visible = false;
-            }));
+            }, l => _closeLabel = l));
 
             y += 44f;
             _root.AddChild(Button("ID 预览", 18, y, 322, 32, new Color(0.32f, 0.42f, 0.68f, 1f), () => ShowIdPanel(0)));
 
-            _root.visible = false;
+            _root.visible = _visible;
             GRoot.inst.AddChild(_root);
         }
 

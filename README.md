@@ -1,11 +1,11 @@
-﻿# 吉星小镇修改器（CesiumLoader 版）
+# 吉星小镇修改器（CesiumLoader 版）
 
 <p align="left">
   <img src="icon-town.png" width="96" alt="icon">
 </p>
 
 > 《吉星派对》（Steam：AstralParty）单人模式「吉星小镇」的 CesiumLoader 修改器。
-> 在游戏内按 **F8**，或点右上角「修改器」按钮打开 FairyGUI 面板。
+> 在游戏内按 **F8**（可改），或点右上角「修改器」按钮打开 FairyGUI 面板。
 
 ## 功能介绍
 
@@ -25,8 +25,29 @@
 ## 使用
 
 1. 进入单人模式「吉星小镇」；
-2. 按 `F8` 或点右上角「修改器」；
+2. 按 `F8`（默认，可在配置里改）或点右上角「修改器」；
 3. 按钮和面板都可以拖动，拖到顺手的位置。
+
+## 配置
+
+配置文件是 `AstralParty_ModLoader/configs/TownTrainer.json`（老版本加载器会放在 `mods/TownTrainer/config.json`），首次加载时自动生成带默认值和说明，改完保存即可热重载，不用重启游戏。
+
+```json
+{
+  "enabled": true,
+  "toggleKey": "F8",
+  "showByDefault": false,
+  "_comments": { "...": "自动生成的多语言说明，可忽略" }
+}
+```
+
+| 键 | 类型 | 默认 | 说明 |
+|---|---|---|---|
+| `enabled` | bool | `true` | 是否启用。`false` 时按钮和面板都不出现 |
+| `toggleKey` | string | `"F8"` | 开关面板的按键，填 Unity `KeyCode` 名（`F8`、`F9`、`Insert`、`Home`、`BackQuote`、`KeyPad1`…）。填 `None` 停用热键，只能用按钮开关。写错会退回 `F8` |
+| `showByDefault` | bool | `false` | 进入单人模式时是否直接展开面板。`false` 只显示右上角按钮 |
+
+> 键名用的是 Unity 的 `KeyCode` 枚举名，不分大小写。改 `toggleKey` 后，面板标题旁和「关闭」按钮上的提示会立刻跟着变。
 
 ## 安装
 
@@ -45,6 +66,7 @@ AstralParty_ModLoader/mods/TownTrainer/
 - 直接结算会调用游戏原本的 `UploadDataToServer(GameStatus.Victory)`；
 - 卡牌/遗物 ID 只读取 `StaticConfigure.SinglePlayer`，即吉星小镇自己的配置；
 - ID 预览每页 20 条，可以翻页看完全部；
+- 热键走 SDK 的 `InputService`（反射 + Win32 兜底），比 `UnityEngine.Input` 在 IL2CPP 下更稳；输入框正在接收文字时不会触发；
 - 仅本地修改器，不修改服务端数据。
 
 ## 构建

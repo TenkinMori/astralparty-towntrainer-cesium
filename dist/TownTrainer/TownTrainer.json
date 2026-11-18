@@ -1,10 +1,10 @@
 {
   "id": "TownTrainer",
   "name": "吉星小镇修改器",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": "TenkinMori",
-  "description": "单人模式「吉星小镇」修改器：金币、卡牌、遗物、进度、骰子、锁定进度、直接结算，支持 ID 预览。",
+  "description": "单人模式「吉星小镇」修改器：金币、卡牌、遗物、进度、骰子、锁定进度、直接结算，支持 ID 预览；热键与默认显示可在配置里改。",
   "permissions": 1,
-  "sdkVersion": "3.1.1",
+  "sdkVersion": "3.7.0",
   "dependencies": []
 }
