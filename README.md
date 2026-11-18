@@ -81,7 +81,27 @@ pwsh -File build.ps1
 
 ```text
 dist/TownTrainer/
+dist/TownTrainer-1.2.0.zip
 ```
+
+## 更新日志
+
+### 1.2.0
+
+- 新增配置项 `toggleKey`：面板开关按键可改为任意 Unity `KeyCode`（`F8`、`F9`、`Insert`、`Home`、`BackQuote`、`KeyPad1`…），填 `None` 停用热键；
+- 新增配置项 `showByDefault`：进入单人模式是否直接展开面板，默认 `false`（只留右上角按钮）；
+- 新增配置项 `enabled`：整个模组的开关；
+- 热键改走 SDK `InputService`，不再依赖 `UnityEngine.Input`，并自算下降沿避免掉帧丢键；
+- 改配置即时热重载，标题、提示文字和「关闭」按钮上的按键名会自动跟着变；
+- 面板标题的版本号改为读取模组版本，不再硬编码。
+
+### 1.1.0
+
+- 加入独立 ID 预览面板，卡牌/遗物分页。
+
+### 1.0.0
+
+- 首个版本。
 
 ## 许可
 
