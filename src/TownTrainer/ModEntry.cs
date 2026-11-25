@@ -28,21 +28,32 @@ namespace TownTrainer
     public sealed class TownTrainerController : ModBase
     {
         private TownTrainerPanel _panel;
+        private BattlePassTaskButton _battlePassButton;
 
         internal bool Enabled { get { return _enabled; } }
         internal KeyCode ToggleKey { get { return _toggleKey; } }
         internal bool ShowByDefault { get { return _showByDefault; } }
+        /// <summary>通行证按钮逐回合上报的间隔（毫秒）。配置里可改。</summary>
+        internal int RoundIntervalMs { get { return _roundIntervalMs; } }
 
         private bool _enabled = true;
         private KeyCode _toggleKey = KeyCode.F8;
         private bool _showByDefault;
+        private int _roundIntervalMs = DefaultRoundIntervalMs;
 
         public override string Name { get { return "吉星小镇修改器"; } }
-        public override string Version { get { return "1.2.0"; } }
+        public override string Version { get { return "1.3.6"; } }
         public override string Author { get { return "TenkinMori"; } }
+        /// <summary>通行证上报的默认间隔（毫秒）。50 毫秒时 100 回合约 5 秒。</summary>
+        internal const int DefaultRoundIntervalMs = 50;
+        /// <summary>间隔下限：再快会被游戏帧率卡住，也更容易被服务器当成异常流量。</summary>
+        internal const int MinRoundIntervalMs = 10;
+        /// <summary>间隔上限：100 回合留一个还能接受的总时长。</summary>
+        internal const int MaxRoundIntervalMs = 5000;
+
         public override string Description
         {
-            get { return "单人模式「吉星小镇」修改器：金币、卡牌、遗物、进度、骰子、锁定进度、直接结算，支持 ID 预览；热键与默认显示可在配置里改。"; }
+            get { return "单人模式「吉星小镇」修改器：金币、卡牌、遗物、进度、骰子、锁定进度、直接结算，支持 ID 预览；通行证页面附「完成回合任务」按钮（上报间隔可在配置里改）；热键与默认显示也可在配置里改。"; }
         }
 
         public override void OnInitialize()
@@ -55,7 +66,8 @@ namespace TownTrainer
         {
             ReadConfig(false);
             _panel?.ApplyConfig();
-            Log.Info("配置已更新：enabled=" + _enabled + "，toggleKey=" + _toggleKey + "，showByDefault=" + _showByDefault);
+            Log.Info("配置已更新：enabled=" + _enabled + "，toggleKey=" + _toggleKey +
+                     "，showByDefault=" + _showByDefault + "，roundIntervalMs=" + _roundIntervalMs);
         }
 
         public override void OnUpdate()
@@ -64,6 +76,9 @@ namespace TownTrainer
             {
                 if (_panel == null) _panel = new TownTrainerPanel(this);
                 _panel.Tick();
+
+                if (_battlePassButton == null) _battlePassButton = new BattlePassTaskButton(this);
+                _battlePassButton.Tick();
             }
             catch (Exception e) { Log.Info("[WARN] UI: " + e.Message); }
         }
@@ -72,6 +87,9 @@ namespace TownTrainer
         {
             _panel?.Dispose();
             _panel = null;
+
+            _battlePassButton?.Dispose();
+            _battlePassButton = null;
         }
 
         private void ReadConfig(bool firstLoad)
@@ -96,11 +114,31 @@ namespace TownTrainer
                 "進入單人模式時是否直接顯示面板。false 時只顯示右上角「修改器」按鈕。",
                 "Whether to show the panel immediately on entering single-player mode. When false, only the corner button is shown.",
                 "ソロモードに入ったときパネルを最初から表示するか。false なら右上の「修改器」ボタンのみ表示。"));
+            changed |= cfg.SetDefault("roundIntervalMs", DefaultRoundIntervalMs, ConfigDoc.Of(
+                "通行证「完成回合任务」按钮逐回合上报的间隔，单位毫秒。默认 50（100 回合约 5 秒）；调大更稳但更慢，范围 10–5000。",
+                "通行證「完成回合任務」按鈕逐回合上報的間隔，單位毫秒。預設 50（100 回合约 5 秒）；調大較穩但較慢，範圍 10–5000。",
+                "Delay in milliseconds between round uploads for the battle-pass button. Default 50 (about 5 s for 100 rounds); larger is gentler but slower. Range 10-5000.",
+                "通行証「回合タスク完了」ボタンのラウンド送信間隔（ミリ秒）。既定 50（100 ラウンドで約 5 秒）。大きくすると安全だが遅い。範囲 10～5000。"));
             if (changed || firstLoad) cfg.SaveIfDirty();
 
             _enabled = cfg.GetBool("enabled", true);
             _showByDefault = cfg.GetBool("showByDefault", false);
             _toggleKey = ParseKey(cfg.GetString("toggleKey", "F8"), KeyCode.F8);
+            _roundIntervalMs = ParseIntervalMs(cfg);
+        }
+
+        /// <summary>
+        /// 读上报间隔（毫秒）。读不到或写错就退回默认值，并夹到 10–5000 之间，
+        /// 免得把用户卡在「一百回合要跑一天」或「一帧发一百个包」两头。
+        /// </summary>
+        private static int ParseIntervalMs(ModConfig cfg)
+        {
+            int ms = cfg.GetInt("roundIntervalMs", DefaultRoundIntervalMs);
+            if (ms <= 0) return DefaultRoundIntervalMs;
+
+            if (ms < MinRoundIntervalMs) return MinRoundIntervalMs;
+            if (ms > MaxRoundIntervalMs) return MaxRoundIntervalMs;
+            return ms;
         }
 
         /// <summary>配置里的键名按 Unity KeyCode 解析，写错就退回默认键。</summary>

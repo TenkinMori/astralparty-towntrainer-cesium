@@ -9,7 +9,7 @@ New-Item -ItemType Directory -Force $out | Out-Null
 Copy-Item "$root\src\TownTrainer\bin\Release\netstandard2.0\TownTrainer.dll" $out -Force
 Copy-Item "$root\src\TownTrainer\TownTrainer.json" $out -Force
 Copy-Item "$root\icon.png" $out -Force
-$ver = '1.2.0'
+$ver = '1.3.6'
 $zip = Join-Path $root "dist\TownTrainer-$ver.zip"
 if (Test-Path $zip) { Remove-Item $zip -Force }
 Compress-Archive -Path "$out\*" -DestinationPath $zip
